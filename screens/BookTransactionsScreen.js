@@ -88,8 +88,25 @@ export default class TransactionsScreen extends React.Component{
         })
     }
     checkBookEligibility=async()=>{
-
+        const ref=await db.collection("books").where("bookId","==",this.state.scannedBookId).get();
+        var transactionType="";
+        if(ref.docs.length===0){
+            transactionType=false
+        }
+        else{
+            ref.docs.map((doc)=>{
+                var book=doc.data();
+                if(book.bookAvailability){
+                    transactionType="issue"
+                }
+                else{
+                    transactionType="return"
+                }
+            });
+        }
+        return transactionType;
     }
+
     checkStudentEligibilityIssue=async()=>{
         
         const ref=await db.collection("Students").where("studentId","==",this.state.scannedStudentId).get()
@@ -122,9 +139,27 @@ export default class TransactionsScreen extends React.Component{
         }
        return isStudentIlegible;     
     }
-    checkStudentEligibilityReturn=async=()=>{
 
+    checkStudentEligibilityReturn=async()=>{
+        const ref=await db.collection("transactions").where("bookId","==",this.state.scannedBookId).limit(1).get();
+        var isStudentIlegible="";
+        ref.docs.map((doc)=>{
+            var lastBookTransaction=doc.data();
+            if(lastBookTransaction.studentId===this.state.studentId){
+                isStudentIlegible=true
+            }
+            else{
+                isStudentIlegible=false
+                alert("book was not issued by this student");
+                this.setState({
+                    scannedBookId:"",
+                    ScannedStudentId:""
+                })   
+            }
+        });
+        return isStudentIlegible
     }
+
     handleTransaction=async()=>{
 
         var transactionType=await this.checkBookEligibility()
